@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Crop AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="background-overlay"></div>
+
+    <div id="auth-modal" class="modal-overlay">
+        <div class="glass-card modal-card">
+            <button class="icon-close" onclick="toggleAuthModal()"><i class="fa-solid fa-times"></i></button>
+            <h2 id="auth-title">Welcome Farmer</h2>
+            <div class="input-wrapper"><label>Email</label><input type="email" id="auth-email"></div>
+            <div class="input-wrapper"><label>Password</label><input type="password" id="auth-pass"></div>
+            <button onclick="handleAuth()" id="auth-action-btn" class="action-btn">Log In</button>
+            <p class="auth-switch"><span id="auth-switch-text">New here?</span> <b onclick="switchAuthMode()" id="auth-toggle-link">Sign Up</b></p>
+            <p id="auth-error" class="error-msg" style="display:none; margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <div id="edit-profile-drawer" class="edit-drawer">
+        <div class="drawer-header"><h2>Manage Profile</h2><button onclick="closeEditProfile()" class="icon-close"><i class="fa-solid fa-times"></i></button></div>
+        <div class="drawer-body">
+            <div class="profile-avatar-large" id="edit-avatar-preview">U</div>
+            <div class="input-wrapper"><label>Display Name</label><input type="text" id="edit-display-name" maxlength="30" oninput="syncAvatarLetter()"></div>
+            <div class="input-wrapper"><label>Email</label><input type="email" id="edit-email" readonly style="opacity:0.6;"></div>
+            <div class="input-wrapper" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
+                <label style="color:var(--accent-color);">📍 Home Location</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="edit-city" placeholder="e.g. Mumbai" style="flex:1;">
+                    <button onclick="getDeviceLocation()" class="geo-btn" title="Use GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
+                </div>
+            </div>
+            <button onclick="saveProfileChanges()" class="action-btn" style="margin-top:20px;">Save Changes</button>
+        </div>
+    </div>
+    <div id="drawer-overlay" class="modal-overlay" onclick="closeEditProfile()"></div>
+
+    <div id="quick-weather-modal" class="modal-overlay">
+        <div class="glass-card modal-card" style="text-align:center; max-width:400px;">
+            <button class="icon-close" onclick="closeQuickWeather()"><i class="fa-solid fa-times"></i></button>
+            <div id="quick-weather-content"><div class="spinner"></div> Checking...</div>
+        </div>
+    </div>
+
+    <div class="top-nav">
+        <div class="nav-left">
+            <button class="menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+            <h2 class="app-logo" onclick="showSection('home-section')"><i class="fa-solid fa-seedling"></i> Smart Crop AI</h2>
+        </div>
+        <div class="nav-right-group">
+            <div class="nav-item nav-location">
+                <span id="top-location-text">Unknown</span>
+                <div class="weather-icon-badge"><i class="fa-solid fa-cloud"></i></div>
+                <div id="hover-weather-details" class="weather-hover-popup">Loading...</div>
+            </div>
+            <div class="nav-item nav-user relative-container" onclick="toggleProfileDropdown('top')">
+                <div class="user-avatar" id="user-avatar-top">U</div>
+                <span id="user-name-top" style="display:none;">Login</span>
+                <div class="dropdown-menu" id="top-dropdown">
+                    <div class="dropdown-item" onclick="openEditProfile()"><i class="fa-solid fa-user-pen"></i> Profile</div>
+                    <div class="dropdown-item logout-item" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <h3>Menu</h3>
+        <button onclick="toggleSidebar()" class="close-btn"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <ul>
+        <li onclick="showSection('home-section')" id="link-home"><i class="fa-solid fa-house"></i> Home</li>
+        <li onclick="showSection('weather-section')" id="link-weather"><i class="fa-solid fa-cloud-sun-rain"></i> Weather Station</li>
+        <li onclick="showSection('doctor-section')" id="link-doctor"><i class="fa-solid fa-user-doctor"></i> Crop Doctor</li>
+        <li onclick="showSection('calc-section')" id="link-calc"><i class="fa-solid fa-calculator"></i> Fertilizer Calc</li>
+        <li onclick="showSection('market-section')" id="link-market"><i class="fa-solid fa-shop"></i> Agri Market</li>
+        
+        <li onclick="toggleSubmenu('crop-submenu', this)" class="submenu-parent" id="link-crop-parent">
+            <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                <span><i class="fa-solid fa-wheat-awn"></i> Crop Tools</span>
+                <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+            </div>
+        </li>
+        <ul id="crop-submenu" class="submenu" style="display:none;">
+            <li onclick="showSection('crop-db-section')" id="link-crop-db"><i class="fa-solid fa-database"></i> Crop Database</li>
+            <li onclick="showSection('calendar-section')" id="link-calendar"><i class="fa-regular fa-calendar-check"></i> Crop Calendar</li>
+        </ul>
+    </ul>
+
+    <div class="sidebar-footer relative-container" id="sidebar-user-section" style="display:none;" onclick="toggleProfileDropdown('side')">
+        <div class="sidebar-user-trigger">
+            <div class="user-avatar" id="user-avatar-side">U</div>
+            <div class="user-info"><span class="user-name" id="user-name-side">User</span><span class="user-role">Farmer</span></div>
+        </div>
+        <div class="dropdown-menu drop-up" id="side-dropdown">
+            <div class="dropdown-item" onclick="openEditProfile()"><i class="fa-solid fa-user-pen"></i> Profile</div>
+            <div class="dropdown-item logout-item" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+        </div>
+    </div>
+    <div id="sidebar-login-btn" onclick="toggleAuthModal()" style="margin-top:auto; padding:15px; cursor:pointer; color:#a8ffb8; display:flex; align-items:center;"><i class="fa-solid fa-right-to-bracket" style="margin-right:10px;"></i> Login</div>
+</nav>
+
+    <div class="main-content">
+        <div id="home-section" class="content-section active-section">
+            <header><h1 id="welcome-header">Farm Dashboard</h1></header>
+            <div class="home-weather-bar glass-card">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="homeSearchInput" placeholder="Quick check (e.g. Tokyo)..." onkeyup="checkEnterHome(event)">
+                <button onclick="handleHomeSearch()" class="search-btn-home">Check</button>
+            </div>
+            <div class="dashboard-grid">
+                <div class="glass-card hover-card" onclick="showSection('weather-section')"><div class="card-icon"><i class="fa-solid fa-cloud-sun-rain"></i></div><h2>Weather</h2><p id="home-weather-preview" style="opacity: 0.7;">Loading...</p></div>
+                <div class="glass-card hover-card" onclick="showSection('doctor-section')"><div class="card-icon"><i class="fa-solid fa-stethoscope"></i></div><h2>Crop Doctor</h2><p>AI Diagnosis</p></div>
+                <div class="glass-card hover-card" onclick="showSection('calc-section')"><div class="card-icon"><i class="fa-solid fa-flask"></i></div><h2>Fertilizer</h2><p>Nutrient Calc</p></div>
+                <div class="glass-card hover-card" onclick="showSection('market-section')"><div class="card-icon"><i class="fa-solid fa-cart-shopping"></i></div><h2>Market</h2><p>Buy Supplies</p></div>
+            </div>
+        </div>
+
+        <div id="crop-db-section" class="content-section">
+            <header><h1>Crop Database</h1></header>
+            <div class="glass-card centered-card" style="max-width: 800px; position:relative; min-height:500px;">
+                <div class="search-container-styled">
+                    <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
+                    <input type="text" id="crop-db-search" placeholder="Type a crop name..." autocomplete="off">
+                    <button onclick="searchCropDB()" class="search-btn-styled">Search</button>
+                    <div id="suggestions-box" class="suggestions-dropdown"></div>
+                </div>
+                <div id="crop-recommendations" style="margin-top:30px;">
+                    <h3 style="margin-bottom:15px; color:#a8ffb8;">🌱 Best Crops for Your Region</h3>
+                    <div id="rec-list" class="grid-2-col"><span class="placeholder-text">Loading...</span></div>
+                </div>
+                <div id="crop-detail-view" style="display:none; margin-top:20px;">
+                    <button onclick="closeCropDetail()" style="color:#aaa; border:none; background:transparent; cursor:pointer;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                    <div class="feasibility-card"><div><h2 id="cd-name" style="text-transform:capitalize;">Crop</h2><p id="cd-sci" style="color:#aaa;">Sci</p></div><div class="score-circle" id="cd-score-circle"><span id="cd-score-val">--</span><div>Score</div></div></div>
+                    <div id="cd-analysis" class="analysis-box">Analyzing...</div>
+                    <div class="detail-grid"><div class="info-box"><label>Profit</label><p id="cd-profit">--</p></div><div class="info-box"><label>Duration</label><p id="cd-duration">--</p></div><div class="info-box" style="grid-column: span 2;"><label>Tips</label><ul id="cd-tips" style="padding-left:20px;"></ul></div></div>
+                    <div class="map-visual-container"><div class="map-header"><span>Regions</span><div class="map-toggles"><button class="map-btn active" onclick="switchMap('country')">Country</button><button class="map-btn" onclick="switchMap('world')">World</button></div></div><div class="map-display" id="map-display-area"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="weather-section" class="content-section"><header><h1>Weather Station</h1></header><div class="glass-card centered-card"><div id="weatherResult"></div></div></div>
+        
+        <div id="doctor-section" class="content-section"><header><h1>Crop Doctor</h1></header><div class="glass-card centered-card">
+            <div class="doctor-tabs" style="display:flex; justify-content:center; gap:15px; margin-bottom:15px;">
+                <button onclick="switchDoctorTab('new')" id="tab-new" class="tab-btn active-tab">New</button>
+                <button onclick="loadHistory()" id="tab-history" class="tab-btn">History</button>
+            </div>
+            
+            <div id="doctor-view-new">
+                <div class="upload-area">
+                    <label for="imageInput" class="custom-file-upload">
+                        <i class="fa-solid fa-camera"></i> Upload Photo
+                    </label>
+                    <input type="file" id="imageInput" accept="image/*">
+                    <div id="preview-container" style="display: none; margin-top: 15px; text-align: center;">
+                        <img id="imagePreview" src="" alt="Crop Preview">
+                    </div>
+                </div>
+                <button onclick="analyzeCrop()" class="action-btn">Analyze</button>
+                <div id="analysisResult"></div>
+            </div>
+            
+            <div id="doctor-view-history" style="display:none;"><div id="history-list"></div></div>
+        </div></div>
+        
+<div id="calc-section" class="content-section">
+    <header>
+        <h1 style="text-align: center; margin-bottom: 10px;">Fertilizer Calc</h1>
+    </header>
+    
+    <div class="glass-card centered-card" style="max-width: 600px; padding: 30px;">
+        
+        <div class="calc-grid-3">
+            <div class="input-wrapper">
+                <label>N %</label>
+                <input type="number" id="n-percent" placeholder="46" value="46">
+            </div>
+            <div class="input-wrapper">
+                <label>P %</label>
+                <input type="number" id="p-percent" placeholder="0" value="0">
+            </div>
+            <div class="input-wrapper">
+                <label>K %</label>
+                <input type="number" id="k-percent" placeholder="0" value="0">
+            </div>
+        </div>
+
+        <div class="calc-grid-2">
+            <div class="input-wrapper">
+                <label>Target N</label>
+                <input type="number" id="target-n-rate" placeholder="kg">
+            </div>
+            <div class="input-wrapper">
+                <label>Area</label>
+                <div class="split-input-group">
+                    <input type="number" id="area-size" placeholder="Size">
+                    <select id="area-unit">
+                        <option value="sqm">m²</option>
+                        <option value="ha">Ha</option>
+                        <option value="acre">Acre</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="calculateFertilizer()" class="action-btn calc-btn">Calculate</button>
+        
+        <div id="result" style="margin-top: 20px; text-align: center; font-weight: bold; color: var(--accent-color);"></div>
+    </div>
+</div>
+        <div id="market-section" class="content-section"><header><h1>Agri Market</h1></header><div class="glass-card centered-card"><input type="text" id="market-search" placeholder="Search Item..."><button onclick="searchAmazon()" class="action-btn">Search Amazon</button></div></div>
+    </div>
+<div id="calendar-section" class="content-section">
+    <header><h1>Crop Calendar</h1></header>
+    
+<div class="glass-card centered-card" style="max-width: 800px; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 15px; color: #a8ffb8;">Add New Crop Plan</h3>
+        
+        <div class="calc-grid-2">
+            <div class="input-wrapper">
+                <label>Crop Name</label>
+                <input type="text" id="plan-crop" placeholder="e.g. Tomato">
+            </div>
+            <div class="input-wrapper">
+                <label>Land Area</label>
+                <div class="split-input-group">
+                    <input type="number" id="plan-area" placeholder="Size">
+                    <select id="plan-unit">
+                        <option value="acre">Acre</option>
+                        <option value="ha">Hectare</option>
+                        <option value="sqm">m²</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="addCropPlan()" class="action-btn" id="btn-add-plan">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Generate Plan (AI)
+        </button>
+    </div>
+
+    <h3 style="text-align: left; max-width: 800px; margin: 0 auto 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+        <i class="fa-solid fa-list-check"></i> Your Active Plans
+    </h3>
+    <div id="calendar-list" class="calendar-grid centered-card" style="max-width: 800px;">
+        <div style="color: #aaa; padding: 20px;">Loading your calendar...</div>
+    </div>
+</div>
+    <script src="script.js"></script>
+</body>
+</html>

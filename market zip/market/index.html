@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agricultural Market Search</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div class="market-container">
+        <h2>🛒 Agricultural Market Search</h2>
+
+        <div class="input-group">
+            <label for="market-category">Product Category</label>
+            <select id="market-category">
+                <option value="all">All Farm Products</option>
+                <option value="pesticides">Pesticides / Herbicides</option>
+                <option value="fertilizers">Fertilizers</option>
+                <option value="seeds">Seeds & Plants</option>
+                <option value="cattle feed">Cattle Feed / Animal Feed</option>
+                <option value="tools">Hand Tools & Supplies</option>
+                <option value="machinery">Machinery & Equipment</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label for="market-search">Specific Search Term</label>
+            <input type="text" id="market-search" placeholder="E.g., Lawn Fertilizer, Corn Seed, Hand Trowel">
+        </div>
+
+        <button onclick="searchAmazon()">Search Amazon</button>
+
+        <div class="market-links" id="market-links">
+            Enter a search term and category to find products.
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
