@@ -1066,3 +1066,83 @@ body.dark-mode .theme-btn {
     display: block;
     /* Or 'flex' depending on your layout */
 }
+/* ================================================= */
+/* MOBILE HEADER FIX (Phone Screens Only)            */
+/* ================================================= */
+@media (max-width: 768px) {
+    
+    /* 1. Hide the User Name Text (Keep only the Avatar Icon) */
+    #user-name-top {
+        display: none !important;
+    }
+
+    /* 2. Hide the Weather/Location Pill completely on mobile */
+    .nav-location {
+        display: none !important;
+    }
+
+    /* 3. Make the User Button smaller (just the icon) */
+    .nav-user {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-left: 10px !important;
+    }
+    
+    /* 4. Fix the Logo text so it never breaks into 3 lines */
+    .app-logo {
+        font-size: 1.3rem !important; /* Slightly smaller text */
+        white-space: nowrap !important; /* Forces text to stay on one line */
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* 5. Ensure the right-side icons are tight but aligned */
+    .nav-right-group {
+        gap: 5px !important;
+    }
+}
+/* ================================================= */
+/* MOBILE HEADER: HORIZONTAL SCROLL FIX              */
+/* ================================================= */
+@media (max-width: 768px) {
+
+    /* 1. Make the top nav a scrollable flex container */
+    .top-nav {
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Forces items to stay in one long line */
+        overflow-x: auto !important;  /* Enables side-scrolling */
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch; /* Smooth scroll on iPhone */
+        padding-right: 15px; /* Adds space at the end so last item isn't cut off */
+        gap: 15px; /* Space between the logo group and right group */
+    }
+
+    /* 2. Hide the scrollbar (so it looks clean) */
+    .top-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* 3. Ensure the Logo Group stays locked to the left (Optional) */
+    /* If you want the logo to scroll too, remove this part. 
+       If you want the logo sticky, keep this: */
+    .nav-left {
+        flex-shrink: 0; /* Prevents logo from squishing */
+        margin-right: auto; /* Pushes everything else to the right */
+    }
+
+    /* 4. Ensure the Right Group (Weather/User) doesn't wrap */
+    .nav-right-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0; /* Prevents items from collapsing */
+    }
+
+    /* 5. Protect the Logo Text */
+    .app-logo {
+        white-space: nowrap;
+        font-size: 1.2rem; /* Slightly smaller for mobile */
+    }
+}
