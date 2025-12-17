@@ -69,7 +69,11 @@ function cleanTipText(t) {
     return formatText(String(raw));
 }
 
-function toTitleCase(s) { return s ? s.replace(/\b\w/g, l => l.toUpperCase()) : ""; }
+// Helper to capitalize first letter of every word
+function toTitleCase(str) {
+    if (!str) return "";
+    return str.replace(/\b\w/g, l => l.toUpperCase());
+}
 function formatTime(u, o) { const d = new Date((u+o)*1000); return d.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' }); }
 function getCardinalDirection(a) { return ['N','NE','E','SE','S','SW','W','NW'][Math.round(a/45)%8]; }
 
@@ -77,6 +81,16 @@ function getCardinalDirection(a) { return ['N','NE','E','SE','S','SW','W','NW'][
 // 4. INITIALIZATION & AUTH
 // ==========================================
 window.onload = function() {
+    
+    // --- ADD THESE 3 LINES ---
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+    updateThemeIcon();
+    // -------------------------
+
+    // ... rest of your existing onload code ...
+};
     // Theme Check
     const savedTheme = localStorage.getItem('theme') || 'dark-mode';
     if(savedTheme === 'light-mode') document.body.classList.add('light-mode');
@@ -117,9 +131,9 @@ window.onload = function() {
             if(box) box.style.display = 'none';
         }
     });
-};
 
-/* --- REPLACE window.getWeather IN SCRIPT.JS --- */
+
+/* --- REPLACE YOUR EXISTING window.getWeather FUNCTION WITH THIS --- */
 window.getWeather = async function(city) {
     const resultBox = document.getElementById('weatherResult');
     
@@ -139,20 +153,41 @@ window.getWeather = async function(city) {
             return;
         }
 
-        // 3. Save Country for Market
+        // 3. Save Country (for Market feature)
         if (data.sys && data.sys.country) localStorage.setItem('user_country', data.sys.country);
 
-        // 4. Extract Data
+        // 4. Extract Basic Weather Data
         const temp = Math.round(data.main.temp);
         const desc = toTitleCase(data.weather[0].description);
         const hum = data.main.humidity;
         const windS = data.wind.speed;
         const windD = data.wind.deg;
         const windDirStr = getCardinalDirection(windD);
-        const aqiVal = data.aqi_index || 1; 
-        const aqiInfo = AQI_MAP[aqiVal] || { label: "Good", class: "aqi-good" };
+        
+        // ===============================================
+        // 5. NEW AQI LOGIC (0-500 CPCB Scale)
+        // ===============================================
+        const aqiVal = data.aqi_val || 0; // Get the precise number (e.g. 142)
+        
+        let aqiInfo = { label: "Good", color: "#4CAF50" }; // Default Green
 
-        // 5. Render Main Weather Widget (Bento Grid)
+        if (aqiVal <= 50) { 
+            aqiInfo = { label: "Good", color: "#4CAF50" }; // Green
+        } else if (aqiVal <= 100) { 
+            aqiInfo = { label: "Satisfactory", color: "#A4C639" }; // Light Green
+        } else if (aqiVal <= 200) { 
+            aqiInfo = { label: "Moderate", color: "#FFC107" }; // Yellow
+        } else if (aqiVal <= 300) { 
+            aqiInfo = { label: "Poor", color: "#FF9800" }; // Orange
+        } else if (aqiVal <= 400) { 
+            aqiInfo = { label: "Very Poor", color: "#F44336" }; // Red
+        } else { 
+            aqiInfo = { label: "Severe", color: "#8B0000" }; // Dark Red
+        }
+
+        // ===============================================
+        // 6. RENDER THE WIDGET (With new AQI Card)
+        // ===============================================
         resultBox.innerHTML = `
             <div class="weather-hero">
                 <div style="font-size:1.5rem; color:var(--accent-color);">${data.name}, ${data.sys.country}</div>
@@ -164,27 +199,27 @@ window.getWeather = async function(city) {
                 <div class="bento-card"><div class="bento-title"><i class="fa-solid fa-temperature-half icon-yellow"></i> RealFeel®</div><div class="bento-value">${Math.round(data.main.feels_like)}°</div></div>
                 <div class="bento-card"><div class="bento-title"><i class="fa-solid fa-wind icon-blue"></i> Wind</div><div class="bento-value">${windS} <small>m/s</small></div><div class="bento-sub">${windDirStr} (${windD}°)</div></div>
                 <div class="bento-card"><div class="bento-title"><i class="fa-solid fa-droplet icon-blue"></i> Humidity</div><div class="bento-value">${hum}%</div></div>
-                <div class="bento-card ${aqiInfo.class}"><div class="bento-title"><i class="fa-solid fa-lungs icon-green"></i> AQI</div><div class="bento-value">${aqiVal} <small>${aqiInfo.label}</small></div></div>
+                
+                <div class="bento-card" style="border-left: 4px solid ${aqiInfo.color};">
+                    <div class="bento-title"><i class="fa-solid fa-lungs" style="color:${aqiInfo.color}"></i> AQI</div>
+                    <div class="bento-value">${aqiVal} <small style="color:${aqiInfo.color}; font-size:0.6em;">${aqiInfo.label}</small></div>
+                </div>
+
                 <div class="bento-card"><div class="bento-title"><i class="fa-regular fa-eye icon-purple"></i> Visibility</div><div class="bento-value">${(data.visibility/1000).toFixed(1)} km</div></div>
                 <div class="bento-card"><div class="bento-title"><i class="fa-solid fa-gauge icon-red"></i> Pressure</div><div class="bento-value">${data.main.pressure} hPa</div></div>
             </div>`;
         
-        // 6. FIX: Render Hover Popup (Compass + Humidity)
+        // 7. Render Hover Popup (Compass)
         const popup = document.getElementById('hover-weather-details');
         if(popup) {
-            // We use an SVG arrow rotated by CSS
             const arrowSVG = `<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="transform: rotate(${windD}deg); transition: transform 0.5s;"><path d="M12 2L4.5 20.29C4.24 20.89 4.81 21.5 5.4 21.2L12 18l6.6 3.2c.59.29 1.16-.32.9-.92L12 2z" fill="#a8ffb8"/></svg>`;
-            
             popup.innerHTML = `
                 <div class="mini-header">${data.name}</div>
                 <div class="mini-row"><span>Current</span> <span class="mini-val" style="color:var(--accent-color);">${temp}°C</span></div>
                 <div class="mini-row"><span>Condition</span> <span class="mini-val">${desc}</span></div>
                 <div class="mini-row"><span>Humidity</span> <span class="mini-val">${hum}%</span></div>
-                
                 <div class="compass-container">
-                    <div class="compass-dial" style="border: 2px solid rgba(255,255,255,0.2); border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center;">
-                        ${arrowSVG}
-                    </div>
+                    <div class="compass-dial" style="border: 2px solid rgba(255,255,255,0.2); border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center;">${arrowSVG}</div>
                     <div class="wind-detail">
                         <div class="wind-speed-big" style="font-weight:bold; font-size:1.1rem;">${windS} <small style="font-size:0.7rem; font-weight:400; color:#aaa;">m/s</small></div>
                         <div class="wind-dir-text" style="font-size:0.8rem; color:#a8ffb8;">${windDirStr}</div>
@@ -193,7 +228,7 @@ window.getWeather = async function(city) {
         }
     } catch(e) { 
         console.error(e);
-        resultBox.innerHTML = `<div style="text-align:center; color:#ff6b6b; padding:20px;">Weather unavailable. Check API Key.</div>`; 
+        resultBox.innerHTML = `<div style="text-align:center; color:#ff6b6b; padding:20px;">Weather unavailable.</div>`; 
     }
 }
 
@@ -204,12 +239,18 @@ function setupAutocomplete() {
     const input = document.getElementById('crop-db-search');
     const box = document.getElementById('suggestions-box');
 
-    if (!input || !box) return;
+    // Debug check
+    if (!input) { console.warn("Autocomplete: 'crop-db-search' input not found."); return; }
+    if (!box) { console.warn("Autocomplete: 'suggestions-box' div not found."); return; }
 
     input.addEventListener('input', function() {
         const val = this.value.toLowerCase();
         box.innerHTML = '';
-        if (!val) { box.style.display = 'none'; return; }
+        
+        if (!val) { 
+            box.style.display = 'none'; 
+            return; 
+        }
 
         const matches = CROP_LIST.filter(c => c.toLowerCase().includes(val));
         
@@ -218,8 +259,12 @@ function setupAutocomplete() {
                 const div = document.createElement('div');
                 div.className = 'suggestion-item';
                 div.innerHTML = `<i class="fa-solid fa-leaf"></i> ${crop}`;
-                // FIXED: Just fill input, do NOT auto search
-                div.onclick = () => { input.value = crop; box.style.display = 'none'; };
+                div.onclick = () => { 
+                    input.value = crop; 
+                    box.style.display = 'none'; 
+                    // Optional: Auto-search when clicked
+                    // searchCropDB(); 
+                };
                 box.appendChild(div);
             });
             box.style.display = 'block';
@@ -228,59 +273,106 @@ function setupAutocomplete() {
         }
     });
 
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !box.contains(e.target)) {
+            box.style.display = 'none';
+        }
+    });
+
     input.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') { box.style.display = 'none'; searchCropDB(); }
+        if (e.key === 'Enter') { 
+            box.style.display = 'none'; 
+            searchCropDB(); 
+        }
     });
 }
 
+/* --- REPLACE window.loadCropRecommendations IN SCRIPT.JS --- */
 window.loadCropRecommendations = async function() {
-    const city = localStorage.getItem('user_city');
     const list = document.getElementById('rec-list');
     
-    // Check for missing city
-    if (!city || city === "Unknown") {
-        document.getElementById('rec-city-name').innerText = "Unknown Location";
-        list.innerHTML = `<div style="text-align:center; padding:20px; color:#aaa; grid-column: span 2;">
-            <i class="fa-solid fa-location-dot" style="margin-bottom:10px; font-size: 1.5rem;"></i><br>
-            Please set your location in Profile to see recommendations.
-        </div>`;
+    // 1. Get raw city from storage
+    const rawCity = localStorage.getItem('user_city');
+    
+    // 2. CHECK: If no location is set
+    if (!rawCity || rawCity === "Unknown" || rawCity === "null") {
+        if(list) list.innerHTML = `
+            <div style="text-align:center; padding:20px; color:#aaa; grid-column: span 2;">
+                <i class="fa-solid fa-location-dot" style="margin-bottom:10px; font-size: 1.5rem;"></i><br>
+                Location not found.<br>
+                <span style="font-size:0.9rem; color:#a8ffb8;">Please update your profile location.</span>
+            </div>`;
         return;
     }
 
-    document.getElementById('rec-city-name').innerText = city;
-    list.innerHTML = '<span class="placeholder-text"><i class="fa-solid fa-spinner fa-spin"></i> Analyzing local soil & weather...</span>';
+    // 3. FIX: Capitalize the city name immediately (e.g. "delhi" -> "Delhi")
+    const city = toTitleCase(rawCity);
+
+    // 4. Show "Working" status with Capitalized City
+    if(list) {
+        list.innerHTML = `
+            <div style="grid-column: span 2; text-align: center; padding: 20px; color: #ccc;">
+                <i class="fa-solid fa-spinner fa-spin" style="margin-right: 10px;"></i> 
+                Analyzing soil & weather for <b>${city}</b>...
+            </div>`;
+    }
     
     try {
-        const wRes = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+        // 5. Fetch Weather First (Required for the AI)
+        const wRes = await fetch(`/weather?city=${encodeURIComponent(rawCity)}`);
         const wData = await wRes.json();
         
+        if (!wData.main) throw new Error("Weather data missing");
+
+        // 6. Ask AI for Recommendations
         const res = await fetch('/recommend-crops', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ city: city, weather: { temp: wData.main.temp, humidity: wData.main.humidity } })
+            body: JSON.stringify({ 
+                city: city, 
+                weather: { temp: wData.main.temp, humidity: wData.main.humidity } 
+            })
         });
         
         const data = await res.json();
         
+        // 7. Render the Results
         if (data.recommendations && data.recommendations.length > 0) {
             let html = '';
             data.recommendations.forEach(crop => {
-                let badgeColor = crop.difficulty === 'Easy' ? '#4CAF50' : (crop.difficulty === 'Medium' ? '#FFC107' : '#F44336');
+                // Determine badge color based on difficulty
+                let badgeColor = '#4CAF50'; // Green (Easy)
+                if (crop.difficulty === 'Medium') badgeColor = '#FFC107'; // Yellow
+                if (crop.difficulty === 'Hard') badgeColor = '#F44336'; // Red
+
                 html += `
-                <div class="rec-card" onclick="document.getElementById('crop-db-search').value='${crop.name}';">
-                    <div style="display:flex; justify-content:space-between;">
-                        <strong>${crop.name}</strong>
-                        <span style="font-size:0.7rem; background:${badgeColor}; color:#000; padding:2px 6px; border-radius:4px;">${crop.difficulty}</span>
+                <div class="rec-card" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.2s;" 
+                     onclick="document.getElementById('crop-db-search').value='${crop.name}'; searchCropDB();">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                        <strong style="font-size: 1.1rem; color: #a8ffb8;">${crop.name}</strong>
+                        <span style="font-size:0.7rem; background:${badgeColor}; color:#000; padding:2px 8px; border-radius:10px; font-weight: bold; height: fit-content;">${crop.difficulty}</span>
                     </div>
-                    <p style="font-size:0.85rem; color:#ccc; margin-top:5px;">${crop.reason}</p>
+                    <p style="font-size:0.85rem; color:#ddd; line-height: 1.4;">${crop.reason}</p>
                 </div>`;
             });
             list.innerHTML = html;
         } else {
-            list.innerHTML = `<span class="placeholder-text">No specific recommendations found.</span>`;
+            // Fallback if AI returns empty list
+            list.innerHTML = `<span class="placeholder-text">No specific data found for ${city}. Try searching manually.</span>`;
         }
+
     } catch (e) { 
-        list.innerHTML = `<span class="error-msg" style="color:#ff6b6b">Could not load recommendations. Check connection.</span>`; 
+        console.error("Recommendation Error:", e);
+        // 8. ERROR STATE
+        if(list) {
+            list.innerHTML = `
+                <div style="color:#ff6b6b; text-align:center; grid-column: span 2;">
+                    <i class="fa-solid fa-triangle-exclamation"></i><br>
+                    Could not load recommendations.<br>
+                    <small>${e.message}</small>
+                </div>`; 
+        }
     }
 }
 
@@ -392,14 +484,20 @@ window.analyzeCrop = async function() {
 
         // 2. Format Headers (Diagnosis, Prevention, etc.)
         const headers = ["DIAGNOSIS:", "CAUSES:", "TREATMENT:", "PREVENTION:", "SYMPTOMS:"];
+        
         headers.forEach(header => {
             const regex = new RegExp(header, "gi");
-            text = text.replace(regex, `<br><br><div class="analysis-header" style="color:#a8ffb8; font-weight:bold; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:5px;">${header}</div>`);
+            
+            // FIX: Removed <br><br>. Now using CSS margins for perfect spacing.
+            text = text.replace(regex, `<div class="analysis-header">${header}</div>`);
         });
 
-        if (text.trim().startsWith('<br>')) text = text.replace('<br><br>', '');
+        // 3. Clean up any double newlines the AI might have sent at the start
+        text = text.trim();
 
         resultBox.innerHTML = text;
+
+// ... (rest of the function) ...
 
         if (currentUser) {
             db.collection('users').doc(currentUser.uid).collection('history').add({
@@ -414,74 +512,98 @@ window.analyzeCrop = async function() {
     }
 }
 
-// ==========================================
-// 8. FERTILIZER (With Unit Conversion)
-// ==========================================
-window.calculateFertilizer = function() {
-    const n = parseFloat(document.getElementById('n-percent').value);
+/* --- REPLACE window.calculateFertilizer IN SCRIPT.JS --- */
+window.calculateFertilizer = async function() {
+    const btn = document.querySelector('.calc-btn');
+    const resultBox = document.getElementById('result');
+    
+    // 1. Get Values
+    const n = parseFloat(document.getElementById('n-percent').value) || 0;
+    const p = parseFloat(document.getElementById('p-percent').value) || 0;
+    const k = parseFloat(document.getElementById('k-percent').value) || 0;
     const t = parseFloat(document.getElementById('target-n-rate').value);
     let area = parseFloat(document.getElementById('area-size').value);
     const unit = document.getElementById('area-unit').value;
+    
+    // Capitalize City Name Immediately
+    let city = localStorage.getItem('user_city') || "India";
+    city = toTitleCase(city); 
 
-    if (n && t && area) {
-        if (unit === 'ha') area = area * 10000;
-        else if (unit === 'acre') area = area * 4046.86;
+    // 2. Validate Inputs
+    if (!n || !t || !area) {
+        resultBox.innerHTML = `<span style="color:#ff6b6b">Please fill in N%, Target N, and Area.</span>`;
+        return;
+    }
 
-        const result = ((area / 100) * (t / (n / 100))).toFixed(2);
-        document.getElementById('result').innerText = `Total Fertilizer Needed: ${result} kg`;
-    } else {
-        document.getElementById('result').innerText = "Please fill in all fields.";
+    // 3. INSTANT MATH (Does not wait for AI)
+    if (unit === 'ha') area = area * 10000;
+    else if (unit === 'acre') area = area * 4046.86;
+
+    const finalQty = ((area / 100) * (t / (n / 100))).toFixed(2);
+    
+    // 4. Render Quantity IMMEDIATELY (UX Speed Boost)
+    // We show the quantity first, and a "Loading..." spinner for the price below it.
+    resultBox.innerHTML = `
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1);">
+            
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 0.9rem; color: #ccc; text-transform: uppercase; letter-spacing: 1px;">Fertilizer Needed</div>
+                <div style="font-size: 2.2rem; font-weight: bold; color: #fff; margin: 5px 0;">${finalQty} <span style="font-size:1rem; color:#888;">kg</span></div>
+            </div>
+
+            <div id="cost-loader-area" style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 0.9rem; color: #888;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="color:#a8ffb8; margin-right:5px;"></i> 
+                    Checking current rates in ${city}...
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 5. Fetch Price in Background
+    try {
+        const res = await fetch('/fertilizer-price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ n, p, k, city }) // Sending city to server
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) throw new Error("Price fetch failed");
+
+        const price = data.price_per_kg;
+        const totalCost = (finalQty * price).toFixed(0); 
+        
+        // Format Money (e.g. ₹ 1,200)
+        const fmtCost = Number(totalCost).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+
+        // 6. Update the "Loading" area with the Real Price
+        const costArea = document.getElementById('cost-loader-area');
+        if (costArea) {
+            costArea.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div style="text-align:left;">
+                        <div style="font-size: 0.85rem; color: #aaa;">Est. Cost (${city} Rates)</div>
+                        <div style="font-size: 0.8rem; color: #666; margin-top:2px;">Likely: ${data.name} @ ₹${price}/kg</div>
+                    </div>
+                    <div style="font-size: 1.8rem; font-weight: bold; color: #a8ffb8;">${fmtCost}</div>
+                </div>
+            `;
+        }
+
+    } catch (e) {
+        console.error(e);
+        const costArea = document.getElementById('cost-loader-area');
+        if (costArea) {
+            costArea.innerHTML = `<div style="font-size: 0.8rem; color: #ff6b6b;">Could not fetch live market rates.</div>`;
+        }
     }
 }
-
 // ==========================================
 // 9. SMART MARKET (Location Aware)
 // ==========================================
 window.checkEnterMarket = function(e) { if (e.key === "Enter") searchAmazon(); }
-
-window.searchAmazon = async function() {
-    const query = document.getElementById('market-search').value;
-    if (!query) return alert("Please enter a product name.");
-
-    const resultsDiv = document.getElementById('market-results');
-    const loadingDiv = document.getElementById('market-loading');
-    
-    resultsDiv.innerHTML = '';
-    loadingDiv.style.display = 'block';
-
-    const city = localStorage.getItem('user_city') || "Unknown Location";
-    const countryCode = localStorage.getItem('user_country') || "US";
-    
-    try {
-        const res = await fetch('/market-recommendations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query, location: city })
-        });
-        
-        const data = await res.json();
-        loadingDiv.style.display = 'none';
-
-        if(data.products && data.products.length > 0) {
-            data.products.forEach(prod => {
-                const domain = AMAZON_DOMAINS[countryCode] || 'amazon.com';
-                const searchUrl = `https://www.${domain}/s?k=${encodeURIComponent(prod.name)}`;
-                
-                const card = document.createElement('div');
-                card.className = 'product-card';
-                card.onclick = () => window.open(searchUrl, '_blank');
-                card.innerHTML = `<div class="prod-name">${prod.name}</div><div class="prod-price">${prod.price}</div><div class="prod-reason">${prod.reason}</div><div class="amazon-link-hint"><i class="fa-brands fa-amazon"></i> Buy on ${domain}</div>`;
-                resultsDiv.appendChild(card);
-            });
-        } else {
-            throw new Error("No AI results");
-        }
-    } catch (e) {
-        loadingDiv.style.display = 'none';
-        const domain = AMAZON_DOMAINS[countryCode] || 'amazon.com';
-        window.open(`https://www.${domain}/s?k=${encodeURIComponent(query)}`, '_blank');
-    }
-}
 
 // ==========================================
 // 10. GENERAL UI & LOCATION
@@ -490,16 +612,76 @@ function formatUsername(name) { if(!name) return "User"; let f = name.trim(); re
 window.syncAvatarLetter = function() { const i = document.getElementById('edit-display-name').value; document.getElementById('edit-avatar-preview').innerText = i ? i.trim().charAt(0).toUpperCase() : "U"; }
 function updateUIForLogin(user) { document.querySelector('.nav-user').classList.add('logged-in'); let rawName = user.displayName; if(!rawName && user.email) rawName = user.email.split('@')[0]; const finalName = formatUsername(rawName); document.getElementById('user-name-top').innerText = finalName; document.getElementById('user-name-side').innerText = finalName; document.getElementById('edit-display-name').value = finalName; const initial = finalName.charAt(0).toUpperCase(); document.getElementById('user-avatar-top').innerText = initial; document.getElementById('user-avatar-side').innerText = initial; document.getElementById('edit-avatar-preview').innerText = initial; document.getElementById('user-name-top').style.display='block'; document.getElementById('sidebar-login-btn').style.display='none'; document.getElementById('sidebar-user-section').style.display='block'; }
 function updateUIForLogout() { document.querySelector('.nav-user').classList.remove('logged-in'); document.getElementById('user-name-top').style.display = 'none'; document.getElementById('sidebar-user-section').style.display = 'none'; document.getElementById('sidebar-login-btn').style.display = 'flex'; }
-async function loadUserData(uid) { try { const doc = await db.collection('users').doc(uid).get(); if (doc.exists) { const data = doc.data(); if(data.displayName) { currentUser.displayName = data.displayName; updateUIForLogin(currentUser); } if (data.savedCity) { localStorage.setItem('user_city', data.savedCity); updateTopBarLocation(data.savedCity); getWeather(data.savedCity); document.getElementById('edit-city').value = data.savedCity; } } } catch (err) {} }
+async function loadUserData(uid) { 
+    try { 
+        const doc = await db.collection('users').doc(uid).get(); 
+        if (doc.exists) { 
+            const data = doc.data(); 
+            
+            // 1. Update Name
+            if(data.displayName) { 
+                currentUser.displayName = data.displayName; 
+                updateUIForLogin(currentUser); 
+            } 
+            
+            // 2. Update Location & Weather
+            if (data.savedCity) { 
+                localStorage.setItem('user_city', data.savedCity); 
+                updateTopBarLocation(data.savedCity); 
+                
+                // Fetch Main Weather
+                getWeather(data.savedCity); 
+                
+                // --- FIX: Update the Home Dashboard Card too! ---
+                updateHomeWeatherPreview(data.savedCity);
+                
+                document.getElementById('edit-city').value = data.savedCity; 
+            } 
+        } 
+    } catch (err) { console.error(err); } 
+}
 
 window.toggleProfileDropdown = function(location) { if (!currentUser) return toggleAuthModal(); document.querySelectorAll('.dropdown-menu').forEach(el => el.classList.remove('show')); if (location === 'top') document.getElementById('top-dropdown').classList.add('show'); else document.getElementById('side-dropdown').classList.add('show'); event.stopPropagation(); }
 window.openEditProfile = function() { if (!currentUser) return; document.getElementById('edit-profile-drawer').classList.add('open'); document.getElementById('drawer-overlay').style.display = 'block'; document.getElementById('edit-display-name').value = currentUser.displayName || ""; document.getElementById('edit-email').value = currentUser.email; }
 window.closeEditProfile = function() { document.getElementById('edit-profile-drawer').classList.remove('open'); document.getElementById('drawer-overlay').style.display = 'none'; }
-window.saveProfileChanges = async function() { const newName = document.getElementById('edit-display-name').value.trim(); const city = document.getElementById('edit-city').value.trim(); if(!newName) return alert("Name required"); const btn = document.querySelector('#edit-profile-drawer .action-btn'); const oldText = btn.innerText; btn.innerText = "Saving..."; try { await currentUser.updateProfile({ displayName: newName }); const updateData = { displayName: newName }; if(city) updateData.savedCity = city; await db.collection('users').doc(currentUser.uid).set(updateData, { merge: true }); updateUIForLogin(currentUser); if(city) { localStorage.setItem('user_city', city); updateTopBarLocation(city); getWeather(city); } closeEditProfile(); } catch (e) { alert(e.message); } finally { btn.innerText = oldText; } }
+/* --- REPLACE window.saveProfileChanges IN SCRIPT.JS --- */
+window.saveProfileChanges = async function() { 
+    const newName = document.getElementById('edit-display-name').value.trim(); 
+    let city = document.getElementById('edit-city').value.trim(); 
+    
+    // Capitalize City (Fix from before)
+    city = toTitleCase(city);
+
+    if(!newName) return alert("Name required"); 
+
+    const btn = document.querySelector('#edit-profile-drawer .action-btn'); 
+    const oldText = btn.innerText; 
+    btn.innerText = "Saving..."; 
+
+    try { 
+        await currentUser.updateProfile({ displayName: newName }); 
+        
+        const updateData = { displayName: newName }; 
+        if(city) {
+            updateData.savedCity = city; 
+            localStorage.setItem('user_city', city); // Save immediately
+        }
+        
+        // Save to Firebase
+        await db.collection('users').doc(currentUser.uid).set(updateData, { merge: true }); 
+        
+        // --- THE FIX: RELOAD PAGE AUTOMATICALLY ---
+        // This forces the whole app to restart with the new city data
+        window.location.reload(); 
+
+    } catch (e) { 
+        alert(e.message); 
+        btn.innerText = oldText; 
+    } 
+}
 
 window.toggleSubmenu = function(menuId, parentEl) { const submenu = document.getElementById(menuId); if (window.getComputedStyle(submenu).display !== 'none') { submenu.style.display = 'none'; parentEl.classList.remove('open'); } else { submenu.style.display = 'block'; parentEl.classList.add('open'); } }
 window.toggleSidebar = function() { document.getElementById('sidebar').classList.toggle('active'); }
-/* --- REPLACE window.showSection IN SCRIPT.JS --- */
 window.showSection = function(id) {
     // 1. Hide all sections
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active-section'));
@@ -509,28 +691,28 @@ window.showSection = function(id) {
     if(target) target.classList.add('active-section');
     
     // 3. Close Sidebar on mobile
-    document.getElementById('sidebar').classList.remove('active');
+    const sb = document.getElementById('sidebar');
+    if(sb) sb.classList.remove('active');
     
     // 4. Handle Submenu Logic
     const cropParent = document.getElementById('link-crop-parent');
     const cropMenu = document.getElementById('crop-submenu');
 
-    // IF we are opening ANY Crop Tool (DB or Calendar), keep menu open
     if(id === 'crop-db-section' || id === 'calendar-section') {
-        cropParent.classList.add('open'); 
-        cropMenu.style.display = 'block';
+        if(cropParent) cropParent.classList.add('open'); 
+        if(cropMenu) cropMenu.style.display = 'block';
 
-        // Trigger specific loaders
-        if (id === 'crop-db-section' && localStorage.getItem('user_city')) {
-            loadCropRecommendations();
+        // --- FIXED: Always try to load recommendations ---
+        if (id === 'crop-db-section') {
+            console.log("Triggering Crop Recommendations...");
+            loadCropRecommendations(); 
         }
         if (id === 'calendar-section') {
             loadCropCalendar();
         }
     } else {
-        // Close menu if going elsewhere
-        cropParent.classList.remove('open'); 
-        cropMenu.style.display = 'none';
+        if(cropParent) cropParent.classList.remove('open'); 
+        if(cropMenu) cropMenu.style.display = 'none';
     }
 }
 
@@ -554,9 +736,117 @@ window.toggleLocationPopup = function() { const p = document.getElementById('loc
 window.updateTopBarLocation = function(c) { document.getElementById('top-location-text').innerText = c; }
 window.checkEnter = function(e) { if (e.key === "Enter") updateLocationFromPopup(); }
 window.checkEnterHome = function(e) { if (e.key === "Enter") handleHomeSearch(); }
-window.updateLocationFromPopup = function() { let c = document.getElementById('popupCityInput').value; if (c) { c = toTitleCase(c); localStorage.setItem('user_city', c); updateTopBarLocation(c); getWeather(c); toggleLocationPopup(); if (currentUser) db.collection('users').doc(currentUser.uid).set({ savedCity: c }, { merge: true }); } }
-window.handleHomeSearch = function() { let c = document.getElementById('homeSearchInput').value; if (c) { c = toTitleCase(c); localStorage.setItem('user_city', c); updateTopBarLocation(c); getWeather(c); if (currentUser) db.collection('users').doc(currentUser.uid).set({ savedCity: c }, { merge: true }); } }
+/* --- REPLACE window.updateLocationFromPopup IN SCRIPT.JS --- */
+window.updateLocationFromPopup = function() { 
+    let c = document.getElementById('popupCityInput').value.trim(); 
+    
+    if (c) { 
+        c = toTitleCase(c); // Capitalize
+        
+        // 1. Save to Storage
+        localStorage.setItem('user_city', c); 
+        
+        // 2. Save to Database (if logged in)
+        if (currentUser) {
+            db.collection('users').doc(currentUser.uid).set({ savedCity: c }, { merge: true })
+                .then(() => {
+                    // Reload after DB save
+                    window.location.reload();
+                });
+        } else {
+            // Reload immediately if guest
+            window.location.reload();
+        }
+    } 
+}
+/* --- REPLACE window.handleHomeSearch IN SCRIPT.JS --- */
+window.handleHomeSearch = async function() {
+    const input = document.getElementById('homeSearchInput');
+    const city = input.value.trim();
+    
+    if (!city) {
+        alert("Please enter a city name first.");
+        return;
+    }
 
+    const modal = document.getElementById('quick-weather-modal');
+    const content = document.getElementById('quick-weather-content');
+
+    if (!modal || !content) return;
+
+    // Show Loading
+    modal.style.display = 'flex';
+    content.innerHTML = '<div style="padding:15px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem; color:#a8ffb8;"></i><br><small>Checking...</small></div>';
+
+    try {
+        const res = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        const temp = Math.round(data.main.temp);
+        const desc = data.weather[0].description.replace(/\b\w/g, l => l.toUpperCase());
+        const condition = data.weather[0].main.toLowerCase();
+
+        // --- UPDATED: SMALLER ICONS (2.5rem) ---
+        let iconHTML = '';
+        const iconSize = "2.5rem"; // Much smaller
+        
+        if (condition.includes('clear')) {
+            iconHTML = `<i class="fa-solid fa-sun" style="font-size: ${iconSize}; color: #FBC02D; filter: drop-shadow(0 0 8px rgba(251, 192, 45, 0.6));"></i>`;
+        } 
+        else if (condition.includes('cloud')) {
+            iconHTML = `<i class="fa-solid fa-cloud" style="font-size: ${iconSize}; color: #B0BEC5; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));"></i>`;
+        } 
+        else if (condition.includes('rain') || condition.includes('drizzle')) {
+            iconHTML = `<i class="fa-solid fa-cloud-showers-heavy" style="font-size: ${iconSize}; color: #4FC3F7; filter: drop-shadow(0 0 5px rgba(79, 195, 247, 0.4));"></i>`;
+        } 
+        else if (condition.includes('thunder')) {
+            iconHTML = `<i class="fa-solid fa-bolt" style="font-size: ${iconSize}; color: #FFEB3B; filter: drop-shadow(0 0 5px rgba(126, 87, 194, 0.8));"></i>`;
+        } 
+        else if (condition.includes('snow')) {
+            iconHTML = `<i class="fa-regular fa-snowflake" style="font-size: ${iconSize}; color: #E1F5FE; filter: drop-shadow(0 0 5px rgba(255,255,255,0.6));"></i>`;
+        } 
+        else {
+            iconHTML = `<i class="fa-solid fa-smog" style="font-size: ${iconSize}; color: #90A4AE;"></i>`;
+        }
+
+        // --- COMPACT LAYOUT ---
+        content.innerHTML = `
+            <div style="text-align:center; padding: 5px;">
+                <h3 style="margin:0; color: white; font-size: 1.2rem;">${data.name}, <span style="color:#888; font-size:1rem;">${data.sys.country}</span></h3>
+                
+                <div style="display:flex; align-items:center; justify-content:center; gap: 15px; margin: 15px 0;">
+                    ${iconHTML}
+                    <div style="text-align:left;">
+                        <div style="font-size: 2.2rem; font-weight: bold; color: #a8ffb8; line-height: 1;">${temp}°</div>
+                        <div style="font-size: 0.9rem; color: #ccc;">${desc}</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+                        <i class="fa-solid fa-wind" style="color: #4fc3f7; font-size: 0.9rem;"></i> <span style="font-size:0.9rem; font-weight:bold;">${data.wind.speed}</span> <small>m/s</small>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+                        <i class="fa-solid fa-droplet" style="color: #4fc3f7; font-size: 0.9rem;"></i> <span style="font-size:0.9rem; font-weight:bold;">${data.main.humidity}</span> <small>%</small>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+                        <i class="fa-solid fa-gauge" style="color: #ff6b6b; font-size: 0.9rem;"></i> <span style="font-size:0.9rem; font-weight:bold;">${data.main.pressure}</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;">
+                        <i class="fa-solid fa-temperature-half" style="color: #fbc02d; font-size: 0.9rem;"></i> <span style="font-size:0.9rem; font-weight:bold;">${Math.round(data.main.feels_like)}°</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        input.value = '';
+
+    } catch (e) {
+        content.innerHTML = `<div style="color:#ff6b6b; padding:15px; font-size:0.9rem;">City not found.</div>`;
+    }
+}
 window.toggleTheme = function() { document.body.classList.toggle('light-mode'); localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode'); updateThemeIcon(); }
 function updateThemeIcon() { const btn = document.getElementById('theme-toggle'); if(btn) btn.innerHTML = document.body.classList.contains('light-mode') ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>'; }
 window.switchDoctorTab = function(t) { document.getElementById('doctor-view-new').style.display=t==='new'?'block':'none'; document.getElementById('doctor-view-history').style.display=t==='history'?'block':'none'; document.getElementById('tab-new').classList.toggle('active-tab',t==='new'); document.getElementById('tab-history').classList.toggle('active-tab',t==='history'); }
@@ -744,5 +1034,71 @@ async function updateHomeWeatherPreview(city) {
         
     } catch (e) {
         previewEl.innerHTML = "Unavailable";
+    }
+}
+/* --- FINAL FIXED AMAZON SEARCH --- */
+function searchAmazon() {
+    // 1. Look for the NEW ID
+    const inputElement = document.getElementById('amazon-search-box');
+
+    // 2. Debugging Check
+    if (!inputElement) {
+        alert("Error: The script cannot find 'amazon-search-box'. Did you save the index.html file?");
+        return;
+    }
+
+    // 3. Get text and open link
+    const query = inputElement.value;
+    if (query) {
+        // Opens Amazon India search
+        window.open(`https://www.amazon.in/s?k=${encodeURIComponent(query)}`, '_blank');
+    } else {
+        alert("Please type a product name first!");
+    }
+}
+
+// Ensure the Enter key also works with the new function
+function handleEnter(event) {
+    if (event.key === 'Enter') searchAmazon();
+}
+/* --- FIX FOR MISSING WEATHER FUNCTIONS --- */
+function injectQuickWeatherModal() {
+    // The HTML is already in your index.html, so this helper 
+    // just ensures it is hidden by default to prevent issues.
+    const modal = document.getElementById('quick-weather-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function closeQuickWeather() {
+    const modal = document.getElementById('quick-weather-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Make sure the HTML buttons can see these functions
+window.injectQuickWeatherModal = injectQuickWeatherModal;
+window.closeQuickWeather = closeQuickWeather;
+window.closeCropDetail = function() {
+    document.getElementById('crop-detail-view').style.display = 'none';
+    document.getElementById('crop-recommendations').style.display = 'block';
+    document.getElementById('crop-db-search').value = ''; // Clear search
+}
+/* --- DARK MODE LOGIC --- */
+window.toggleTheme = function() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const btn = document.getElementById('theme-toggle');
+    const isDark = document.body.classList.contains('dark-mode');
+    if(btn) {
+        // Moon for Light Mode, Sun for Dark Mode
+        btn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
     }
 }

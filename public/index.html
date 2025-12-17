@@ -33,11 +33,15 @@
             <div class="input-wrapper"><label>Display Name</label><input type="text" id="edit-display-name" maxlength="30" oninput="syncAvatarLetter()"></div>
             <div class="input-wrapper"><label>Email</label><input type="email" id="edit-email" readonly style="opacity:0.6;"></div>
             <div class="input-wrapper" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
-                <label style="color:var(--accent-color);">📍 Home Location</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="edit-city" placeholder="e.g. Mumbai" style="flex:1;">
-                    <button onclick="getDeviceLocation()" class="geo-btn" title="Use GPS"><i class="fa-solid fa-location-crosshairs"></i></button>
-                </div>
+                <div class="input-wrapper">
+    <label>Home Location</label>
+    <div class="location-input-group">
+        <input type="text" id="edit-city" placeholder="e.g. New Delhi">
+        <button type="button" class="location-btn-styled" onclick="detectLocation()" title="Use Current Location">
+            <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+    </div>
+</div>
             </div>
             <button onclick="saveProfileChanges()" class="action-btn" style="margin-top:20px;">Save Changes</button>
         </div>
@@ -52,26 +56,33 @@
     </div>
 
     <div class="top-nav">
-        <div class="nav-left">
-            <button class="menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-            <h2 class="app-logo" onclick="showSection('home-section')"><i class="fa-solid fa-seedling"></i> Smart Crop AI</h2>
+    <div class="nav-left">
+        <button class="menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+        <h2 class="app-logo" onclick="showSection('home-section')"><i class="fa-solid fa-seedling"></i> Smart Crop AI</h2>
+    </div>
+
+    <div class="nav-right-group">
+        
+        <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Switch Theme">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+
+        <div class="nav-item nav-location">
+            <span id="top-location-text">Unknown</span>
+            <div class="weather-icon-badge"><i class="fa-solid fa-cloud"></i></div>
+            <div id="hover-weather-details" class="weather-hover-popup">Loading...</div>
         </div>
-        <div class="nav-right-group">
-            <div class="nav-item nav-location">
-                <span id="top-location-text">Unknown</span>
-                <div class="weather-icon-badge"><i class="fa-solid fa-cloud"></i></div>
-                <div id="hover-weather-details" class="weather-hover-popup">Loading...</div>
-            </div>
-            <div class="nav-item nav-user relative-container" onclick="toggleProfileDropdown('top')">
-                <div class="user-avatar" id="user-avatar-top">U</div>
-                <span id="user-name-top" style="display:none;">Login</span>
-                <div class="dropdown-menu" id="top-dropdown">
-                    <div class="dropdown-item" onclick="openEditProfile()"><i class="fa-solid fa-user-pen"></i> Profile</div>
-                    <div class="dropdown-item logout-item" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
-                </div>
+
+        <div class="nav-item nav-user relative-container" onclick="toggleProfileDropdown('top')">
+            <div class="user-avatar" id="user-avatar-top">U</div>
+            <span id="user-name-top" style="display:none;">Login</span>
+            <div class="dropdown-menu" id="top-dropdown">
+                <div class="dropdown-item" onclick="openEditProfile()"><i class="fa-solid fa-user-pen"></i> Profile</div>
+                <div class="dropdown-item logout-item" onclick="logoutUser()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
             </div>
         </div>
     </div>
+</div>
 
   <nav id="sidebar" class="sidebar">
     <div class="sidebar-header">
@@ -122,34 +133,99 @@
                 <div class="glass-card hover-card" onclick="showSection('weather-section')"><div class="card-icon"><i class="fa-solid fa-cloud-sun-rain"></i></div><h2>Weather</h2><p id="home-weather-preview" style="opacity: 0.7;">Loading...</p></div>
                 <div class="glass-card hover-card" onclick="showSection('doctor-section')"><div class="card-icon"><i class="fa-solid fa-stethoscope"></i></div><h2>Crop Doctor</h2><p>AI Diagnosis</p></div>
                 <div class="glass-card hover-card" onclick="showSection('calc-section')"><div class="card-icon"><i class="fa-solid fa-flask"></i></div><h2>Fertilizer</h2><p>Nutrient Calc</p></div>
-                <div class="glass-card hover-card" onclick="showSection('market-section')"><div class="card-icon"><i class="fa-solid fa-cart-shopping"></i></div><h2>Market</h2><p>Buy Supplies</p></div>
+            <div class="glass-card hover-card" onclick="showSection('market-section')">
+    <div class="card-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+    <h2>Market</h2>
+    <p>Buy Supplies</p>
+</div>
+            </div>
+        </div>
+<div id="crop-db-section" class="content-section">
+    <header><h1>Crop Database</h1></header>
+    
+    <div class="glass-card centered-card" style="max-width: 800px; position:relative; min-height:500px;">
+        
+        <div style="position: relative; width: 100%; margin-bottom: 30px;">
+            
+            <div class="search-container-styled">
+                <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
+                <input type="text" id="crop-db-search" placeholder="Search crop (e.g. Rice)..." 
+                       autocomplete="off" style="width: 100%;">
+                <button onclick="searchCropDB()" class="search-btn-styled">Search</button>
+            </div>
+
+            <div id="suggestions-box" class="suggestions-dropdown"></div>
+
+        </div>
+
+        <div id="crop-recommendations" style="margin-top:30px;">
+            <h3 style="margin-bottom:15px; color:#a8ffb8;">🌱 Best Crops for Your Region</h3>
+            <div id="rec-list" class="grid-2-col">
+                <span class="placeholder-text">Loading recommendations...</span>
             </div>
         </div>
 
-        <div id="crop-db-section" class="content-section">
-            <header><h1>Crop Database</h1></header>
-            <div class="glass-card centered-card" style="max-width: 800px; position:relative; min-height:500px;">
-                <div class="search-container-styled">
-                    <i class="fa-solid fa-magnifying-glass search-icon-left"></i>
-                    <input type="text" id="crop-db-search" placeholder="Type a crop name..." autocomplete="off">
-                    <button onclick="searchCropDB()" class="search-btn-styled">Search</button>
-                    <div id="suggestions-box" class="suggestions-dropdown"></div>
+        <div id="crop-detail-view" style="display:none; margin-top:20px;">
+            <button onclick="closeCropDetail()" style="color:#aaa; border:none; background:transparent; cursor:pointer; margin-bottom: 15px;">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            
+            <div class="feasibility-card">
+                <div>
+                    <h2 id="cd-name" style="text-transform:capitalize;">Crop</h2>
+                    <p id="cd-sci" style="color:#aaa;">Sci</p>
                 </div>
-                <div id="crop-recommendations" style="margin-top:30px;">
-                    <h3 style="margin-bottom:15px; color:#a8ffb8;">🌱 Best Crops for Your Region</h3>
-                    <div id="rec-list" class="grid-2-col"><span class="placeholder-text">Loading...</span></div>
-                </div>
-                <div id="crop-detail-view" style="display:none; margin-top:20px;">
-                    <button onclick="closeCropDetail()" style="color:#aaa; border:none; background:transparent; cursor:pointer;"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                    <div class="feasibility-card"><div><h2 id="cd-name" style="text-transform:capitalize;">Crop</h2><p id="cd-sci" style="color:#aaa;">Sci</p></div><div class="score-circle" id="cd-score-circle"><span id="cd-score-val">--</span><div>Score</div></div></div>
-                    <div id="cd-analysis" class="analysis-box">Analyzing...</div>
-                    <div class="detail-grid"><div class="info-box"><label>Profit</label><p id="cd-profit">--</p></div><div class="info-box"><label>Duration</label><p id="cd-duration">--</p></div><div class="info-box" style="grid-column: span 2;"><label>Tips</label><ul id="cd-tips" style="padding-left:20px;"></ul></div></div>
-                    <div class="map-visual-container"><div class="map-header"><span>Regions</span><div class="map-toggles"><button class="map-btn active" onclick="switchMap('country')">Country</button><button class="map-btn" onclick="switchMap('world')">World</button></div></div><div class="map-display" id="map-display-area"></div></div>
+                <div class="score-circle" id="cd-score-circle">
+                    <span id="cd-score-val">--</span>
+                    <div>Score</div>
                 </div>
             </div>
-        </div>
 
-        <div id="weather-section" class="content-section"><header><h1>Weather Station</h1></header><div class="glass-card centered-card"><div id="weatherResult"></div></div></div>
+            <div id="cd-analysis" class="analysis-box">Analyzing...</div>
+
+            <div class="detail-grid">
+                <div class="info-box">
+                    <label>Profit</label>
+                    <p id="cd-profit">--</p>
+                </div>
+                <div class="info-box">
+                    <label>Duration</label>
+                    <p id="cd-duration">--</p>
+                </div>
+                <div class="info-box" style="grid-column: span 2;">
+                    <label>Tips</label>
+                    <ul id="cd-tips" style="padding-left:20px;"></ul>
+                </div>
+            </div>
+
+            <div class="map-visual-container">
+                <div class="map-header" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span>Regions</span>
+                    <div class="map-toggles">
+                        <button class="map-btn active" onclick="switchMap('country')">Country</button>
+                        <button class="map-btn" onclick="switchMap('world')">World</button>
+                    </div>
+                </div>
+                <div class="map-display glass-card" id="map-display-area" style="min-height:100px; background:rgba(0,0,0,0.3);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div id="weather-section" class="content-section">
+    <header>
+        <h1 style="text-align: center;">Weather Station</h1>
+    </header>
+    
+    <div class="glass-card centered-card">
+        <div id="weatherResult">
+            <div style="padding: 20px; color: #ccc;">
+                <i class="fa-solid fa-cloud-sun" style="font-size: 3rem; margin-bottom: 10px;"></i>
+                <br>Select a city from the home page to see details.
+            </div>
+        </div>
+    </div>
+</div>
         
         <div id="doctor-section" class="content-section"><header><h1>Crop Doctor</h1></header><div class="glass-card centered-card">
             <div class="doctor-tabs" style="display:flex; justify-content:center; gap:15px; margin-bottom:15px;">
@@ -184,22 +260,22 @@
         <div class="calc-grid-3">
             <div class="input-wrapper">
                 <label>N %</label>
-                <input type="number" id="n-percent" placeholder="46" value="46">
+                <input type="number" id="n-percent" placeholder="e.g. 46 (Urea)">
             </div>
             <div class="input-wrapper">
                 <label>P %</label>
-                <input type="number" id="p-percent" placeholder="0" value="0">
+                <input type="number" id="p-percent" placeholder="e.g. 18 (DAP)">
             </div>
             <div class="input-wrapper">
                 <label>K %</label>
-                <input type="number" id="k-percent" placeholder="0" value="0">
+                <input type="number" id="k-percent" placeholder="e.g. 60 (MOP)">
             </div>
         </div>
 
         <div class="calc-grid-2">
             <div class="input-wrapper">
                 <label>Target N</label>
-                <input type="number" id="target-n-rate" placeholder="kg">
+                <input type="number" id="target-n-rate" placeholder="kg needed">
             </div>
             <div class="input-wrapper">
                 <label>Area</label>
@@ -219,7 +295,27 @@
         <div id="result" style="margin-top: 20px; text-align: center; font-weight: bold; color: var(--accent-color);"></div>
     </div>
 </div>
-        <div id="market-section" class="content-section"><header><h1>Agri Market</h1></header><div class="glass-card centered-card"><input type="text" id="market-search" placeholder="Search Item..."><button onclick="searchAmazon()" class="action-btn">Search Amazon</button></div></div>
+<div id="market-section" class="content-section">
+    <header>
+        <h1 style="text-align: center;">Agri Market</h1>
+    </header>
+    
+    <div class="glass-card centered-card" style="max-width: 600px; text-align: center; margin-top: 20px;">
+        <h3 style="margin-bottom: 20px; color: #a8ffb8;">Find Best Prices</h3>
+        
+        <div class="market-container" style="background: transparent; border: none; padding: 0;">
+            <div class="search-box-container">
+                
+                <input type="text" id="amazon-search-box" placeholder="e.g. Urea, Sprayer, Seeds" 
+                       style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 5px; color: black;"
+                       onkeypress="handleEnter(event)">
+                
+                <button class="amazon-btn" onclick="searchAmazon()">Search Amazon</button>
+                
+            </div>
+        </div>
+    </div>
+</div>
     </div>
 <div id="calendar-section" class="content-section">
     <header><h1>Crop Calendar</h1></header>

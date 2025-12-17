@@ -12,7 +12,15 @@ body { min-height: 100vh; background: linear-gradient(135deg, #0f3d4a 0%, #4a805
 .nav-right-group { display: flex; align-items: center; gap: 15px; justify-content: flex-end; }
 .menu-btn { background: transparent; border: none; color: white; font-size: 1.4rem; cursor: pointer; }
 .app-logo { font-size: 1.3rem; font-weight: 600; color: #a8ffb8; cursor: pointer; }
-#top-location-text { font-size: 0.9rem; font-weight: 500; margin-right: 5px; }
+/* Add this to your style.css */
+#top-location-text { 
+    font-size: 0.9rem; 
+    font-weight: 500; 
+    margin-right: 5px; 
+    
+    /* THIS IS THE FIX: Forces "bengaluru" -> "Bengaluru" */
+    text-transform: capitalize; 
+}
 
 /* ========================================= */
 /* 3. WEATHER POPUP */
@@ -642,4 +650,402 @@ strong { color: #a8ffb8; font-weight: 700; }
 .split-input-group select option {
     background-color: #1a1a1a;
     color: white;
+}
+/* --- Agri Market Button & Input Styling --- */
+
+/* This centers the box and gives it the glass look */
+.market-container {
+    background-color: rgba(0, 0, 0, 0.2); /* Semi-transparent dark background */
+    padding: 30px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    max-width: 500px; /* Controls the overall width of the card */
+    margin: 20px auto; /* Centers the card horizontally */
+}
+
+/* Styles the heading "Find Best Prices" */
+.market-container h3 {
+    color: white;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+/* Styles the input field */
+#amazon-input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background-color: #2a2a2a; /* Darker background for input */
+    color: white;
+    outline: none;
+    font-size: 1rem;
+}
+
+/* STYLES FOR THE GREEN BUTTON */
+.amazon-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #90ee90; /* The bright green color */
+    color: black;
+    font-weight: bold;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+/* Button change on hover */
+.amazon-btn:hover {
+    background-color: #76c976; /* Slightly darker green */
+}
+/* --- FINAL GLASS SEARCH BAR FIX --- */
+
+/* 1. Container Style (Glass Effect) */
+.home-weather-bar {
+    background: rgba(255, 255, 255, 0.1); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+}
+
+/* 2. Input Box (Transparent) */
+#homeSearchInput {
+    background-color: transparent !important;
+    color: white !important;
+    border: none !important;
+    outline: none !important;
+    width: 100%;
+}
+
+/* 3. Placeholder Text Color */
+#homeSearchInput::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* 4. THE MAGIC FIX: Keeps it transparent even with Autofill */
+#homeSearchInput:-webkit-autofill,
+#homeSearchInput:-webkit-autofill:hover, 
+#homeSearchInput:-webkit-autofill:focus {
+    -webkit-text-fill-color: white !important;
+    /* This transition trick prevents the background color from changing */
+    transition: background-color 5000s ease-in-out 0s; 
+}
+/* ======================================================= */
+/* DARK MODE ADD-ON (PASTE AT END OF STYLE.CSS)           */
+/* ======================================================= */
+
+/* --- THEME TOGGLE BUTTON (Updated) --- */
+.theme-btn {
+    width: 35px; /* Slightly smaller for better fit */
+    height: 35px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1); /* Glass effect */
+    color: #a8ffb8; /* Green icon */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Prevents squishing */
+}
+
+.theme-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(20deg);
+}
+
+/* Ensure the right-side group is aligned */
+.nav-right-group {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between Moon, Weather, and Profile */
+    justify-content: flex-end;
+}
+.theme-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: rotate(15deg);
+}
+
+/* 2. Dark Mode Overrides (When body has .dark-mode class) */
+body.dark-mode {
+    background: linear-gradient(135deg, #050505 0%, #1a1a1a 100%) !important;
+    color: #e0e0e0 !important;
+}
+
+/* Darker Navigation & Sidebar */
+body.dark-mode .top-nav,
+body.dark-mode .sidebar,
+body.dark-mode .dropdown-menu,
+body.dark-mode .weather-hover-popup {
+    background: #000000 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Darker Cards & Inputs */
+body.dark-mode .glass-card,
+body.dark-mode .plan-card,
+body.dark-mode .search-container-styled,
+body.dark-mode .home-weather-bar,
+body.dark-mode .bento-card,
+body.dark-mode .suggestions-dropdown,
+body.dark-mode .market-container,
+body.dark-mode .split-input-group,
+body.dark-mode input, 
+body.dark-mode select {
+    background: rgba(20, 20, 20, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #e0e0e0 !important;
+}
+
+/* Text Adjustments */
+body.dark-mode .menu-btn,
+body.dark-mode #crop-db-search,
+body.dark-mode #homeSearchInput,
+body.dark-mode .input-wrapper label {
+    color: #ccc !important;
+}
+
+/* Button in Dark Mode (Sun Icon becomes Gold) */
+body.dark-mode .theme-btn {
+    color: #FFD700 !important; /* Gold Sun */
+    border-color: rgba(255, 215, 0, 0.3);
+}
+/* --- CROP DOCTOR ANALYSIS FORMATTING --- */
+#analysisResult {
+    line-height: 1.6;        /* Comfortable reading height */
+    font-size: 0.95rem;
+    color: #e0e0e0;
+    text-align: left;
+    margin-top: 0;
+    padding: 20px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    
+    /* CRITICAL FIX: 'pre-line' collapses extra spaces but keeps new lines */
+    white-space: pre-line; 
+}
+
+/* The Headers (Diagnosis, Causes, etc.) */
+.analysis-header {
+    margin-top: 30px;        /* Big gap above (separates from previous section) */
+    margin-bottom: 8px;      /* Small gap below (connects to its text) */
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(168, 255, 184, 0.2);
+    color: #a8ffb8;          /* Green text */
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: block;          /* Ensures it takes its own line */
+}
+
+/* Remove margin from the very first header so it sits at the top */
+.analysis-header:first-child {
+    margin-top: 0;
+}
+/* --- FIX: CROP CALENDAR INPUTS (Remove White Background) --- */
+
+/* 1. Target the Crop Name Input specifically */
+#plan-crop {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-radius: 8px;
+}
+
+/* 2. Target the Split Group (Area + Unit) */
+#calendar-section .split-input-group {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 3. Target the Area Input inside the split group */
+#plan-area {
+    background: transparent !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* 4. Target the Unit Dropdown */
+#plan-unit {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #a8ffb8 !important; /* Green text for unit */
+    border: none !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 5. Ensure options in dropdown are dark */
+#plan-unit option {
+    background-color: #1a1a1a !important;
+    color: white !important;
+}
+/* ======================================================= */
+/* FIX: PREVENT WHITE BACKGROUND ON TYPE/AUTOFILL          */
+/* ======================================================= */
+
+/* 1. Target Focus State (When you click inside) */
+#plan-crop:focus,
+#plan-area:focus {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    color: white !important;
+    outline: none !important;
+    border-color: #a8ffb8 !important;
+}
+
+/* 2. Target Browser Autofill (The "Magic Fix") 
+   Browsers force a white/yellow background for autofill. 
+   We use an inner shadow to paint over it with your dark color. */
+#plan-crop:-webkit-autofill,
+#plan-crop:-webkit-autofill:hover, 
+#plan-crop:-webkit-autofill:focus, 
+#plan-crop:-webkit-autofill:active,
+#plan-area:-webkit-autofill,
+#plan-area:-webkit-autofill:hover, 
+#plan-area:-webkit-autofill:focus, 
+#plan-area:-webkit-autofill:active {
+    -webkit-text-fill-color: white !important;
+    /* This paints a dark box inside the input to hide the white browser default */
+    -webkit-box-shadow: 0 0 0px 1000px rgba(20, 20, 20, 0.9) inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: white !important;
+}
+/* ================================================= */
+/* PASTE THIS AT THE VERY BOTTOM OF STYLE.CSS        */
+/* ================================================= */
+
+/* 1. Force the group to align side-by-side perfectly */
+#calendar-section .split-input-group {
+    display: flex !important;
+    align-items: center !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+
+/* 2. The Number Input (Left) - Transparent */
+#plan-area {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: white !important;
+    width: 100% !important;
+    padding: 12px !important;
+}
+
+/* 3. The Unit Dropdown (Right) - THE FIX */
+#plan-unit {
+    /* Step A: Kill the default white browser styling */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    
+    /* Step B: Dark Background & Green Text */
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #a8ffb8 !important;
+    border: none !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+    
+    /* Step C: Add a Custom Green Arrow */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8ffb8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 15px !important;
+    
+    /* Step D: Sizing */
+    padding: 12px 35px 12px 15px !important;
+    cursor: pointer !important;
+    min-width: 90px !important;
+}
+
+/* 4. Make the dropdown list dark when opened */
+#plan-unit option {
+    background-color: #111 !important;
+    color: #fff !important;
+    padding: 10px !important;
+}
+/* ================================================= */
+/* FIX: LOCATION FINDER BUTTON                       */
+/* ================================================= */
+
+.location-btn-styled {
+    /* 1. Make it Dark & Glassy */
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #a8ffb8 !important; /* Green Icon */
+    
+    /* 2. Sizing & Alignment */
+    border-radius: 8px;
+    width: 50px; /* Square shape */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0; /* Prevents it from getting squished */
+}
+
+/* 3. Hover Effect */
+.location-btn-styled:hover {
+    background: rgba(168, 255, 184, 0.2) !important;
+    border-color: #a8ffb8 !important;
+    transform: scale(1.05);
+}
+
+/* 4. Fix input group alignment */
+.location-input-group {
+    display: flex;
+    gap: 10px; /* Space between input and button */
+    align-items: stretch; /* Makes them same height */
+}
+/* ================================================= */
+/* FIX: ALIGN LOCATION INPUT & BUTTON PERFECTLY      */
+/* ================================================= */
+
+/* 1. The Container: Forces side-by-side layout */
+.location-input-group {
+    display: flex !important;
+    align-items: stretch !important; /* Ensures both are same height */
+    gap: 10px !important;            /* Space between input and button */
+    width: 100% !important;
+}
+
+/* 2. The Input Field: Takes up remaining space */
+.location-input-group input {
+    flex-grow: 1 !important;
+    margin: 0 !important;        /* Remove default margins that cause misalignment */
+    height: 45px !important;     /* Set fixed height */
+    border-radius: 8px !important;
+}
+
+/* 3. The Button: Matches Input Height */
+.location-btn-styled {
+    width: 45px !important;      /* Square width */
+    height: 45px !important;     /* Exact same height as input */
+    margin: 0 !important;        /* No margins */
+    padding: 0 !important;
+    
+    /* Dark Glass Style */
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    color: #a8ffb8 !important;
+    
+    /* Center the Icon */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;   /* Prevents button from getting squished */
+}
+
+/* Hover Effect */
+.location-btn-styled:hover {
+    background: rgba(168, 255, 184, 0.2) !important;
+    border-color: #a8ffb8 !important;
 }
